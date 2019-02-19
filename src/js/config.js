@@ -1,7 +1,7 @@
 const ajax={
     obj:{
         //默认
-        url:'',  //地址
+        url:null,  //地址
         type:'get',  //类型，默认get
         dataType: 'text',  //返回类型,默认text
         data:{},   //传值，默认空
@@ -11,6 +11,7 @@ const ajax={
         withCredentials:false,   //同源策略，默认false，true必须指定域名
         beforeSend(XMLHttpRequest) {}
     },
+    xhr:null,
     get(obj={}){
         //get方法 
           return new Promise(function(resolve,reject){
@@ -25,10 +26,10 @@ const ajax={
             }
             let url=`${o.url}${!!u?o.url.includes('?')?'&':'?':''}${u}`;
             
-            xhr.open('get',url,async);
+            
             
             xhr.onreadystatechange=function(){
-                console.log(xhr);
+                //接受请求
                 if (xhr.readyState == 4) {
                     if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
                         resolve(xhr.response);
@@ -37,17 +38,22 @@ const ajax={
                     }
                 }
             } 
+            xhr.open('get',url,async);  
             if(!!o.beforeSend){
+                //设置头
                 o.beforeSend(xhr)
             }
-            xhr.responseType=dataType;
-            xhr.timeout=timeout;
-            xhr.withCredentials=withCredentials;
-            xhr.setRequestHeader('Content-Type', contentType);
-            xhr.send();
+            xhr.responseType=dataType;  //设置类型
+            xhr.timeout=timeout;  //设置超时时间
+            xhr.withCredentials=withCredentials;   //设置同源策略,true需指定域名
+            xhr.setRequestHeader('Content-Type', contentType);  //设置接收头
+            
+            xhr.send();  //发送请求
             xhr.ontimeout=function(e){
+                //超时处理
                 reject(e);
             };
+            this.xhr=xhr;  //存储xhr
 
           }.bind(this));
            
@@ -65,63 +71,73 @@ const ajax={
         let u=null,
             num=0;
         for(let key in data){
-            console.log(key)
             if(!key) break;
             u+=`${!!num?'&':''}${key}=${data[key]}`;
 
             num++;
         }
-        
+       
         xhr.onreadystatechange=function(){
+
             if (xhr.readyState == 4) {
                 if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
                     resolve(xhr.response);
+                    
                 } else {
                     reject(new Error(xhr.statusText));
+                    
                 }
             }
         } 
-        xhr.open('post',url,async);
+        xhr.open('post',url,async);  //open
         if(!!o.beforeSend){
+            //设置头
             o.beforeSend(xhr)
         }
-        xhr.responseType=dataType;
-        xhr.timeout=timeout;
-        xhr.withCredentials=withCredentials;
+
+        xhr.responseType=dataType;  //设置类型
+        xhr.timeout=timeout;//设置超时时间
+        xhr.withCredentials=withCredentials;//设置同源策略,true需指定域名
         
-        xhr.setRequestHeader('Content-Type', contentType);
-        console.log(data);
-        xhr.send(u);
+        xhr.setRequestHeader('Content-Type', contentType);//设置接收头
+        
+        xhr.send(u);  //发送请求
         xhr.ontimeout=function(e){
+            //超时处理
             reject(e);
         };
-
-
-
+        
+       this.xhr=xhr;  //存储
       }.bind(this))
     },
-    abort(){
-        //中断
+    abort(cb){
+       //中断
+       this.xhr.abort();
+       if(!!cb){
+         cb();
+       };
+       return this;
     }
 };
-// ajax.get({
-//     url:'http://api.coinmerit.com/project/ProjectCurrency',
-//     dataType: 'json',
-//     data:{
-//         conversion:'USD'
-//     },
-//     async: true,
-//     timeout: 1000,
-//     beforeSend(XMLHttpRequest) {
-//         XMLHttpRequest.setRequestHeader('CoinMerit-LANG', 'cn');
-//    },
-// }).then(function(data){
-//     console.log(data)
-// },function(err){
-//     console.log(err);
+ajax.get({
+    url:'http://api.coinmerit.com/project/ProjectCurrency',
+    dataType: 'json',
+    data:{
+        conversion:'USD'
+    },
+    async: true,
+    timeout: 1000,
+    beforeSend(XMLHttpRequest) {
+        XMLHttpRequest.setRequestHeader('CoinMerit-LANG', 'cn');
+   },
+}).then(function(data){
+    console.log(data)
+},function(err){
+    console.log(err);
 
-// });
-ajax.post({
+});
+let a=ajax;  //存储ajax对象，为后续中断准备，如不需要直接ajax.post即可
+a.post({
     url:'http://api.coinmerit.com/currencies',
     dataType: 'json',
     data:{
@@ -139,7 +155,6 @@ ajax.post({
         conversion: '',
         openId: '',
     },
-    async: true,
     timeout: 1000,
     beforeSend(XMLHttpRequest) {
         XMLHttpRequest.setRequestHeader('CoinMerit-LANG', 'cn');
@@ -150,3 +165,7 @@ ajax.post({
     console.log(err);
 
 });
+// a.abort(function(){
+//     alert('中断了ajax请求')
+// });
+// console.log(a);
