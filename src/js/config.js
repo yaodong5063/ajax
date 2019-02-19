@@ -110,6 +110,40 @@ const ajax={
        this.xhr=xhr;  //存储
       }.bind(this))
     },
+    upload(obj){
+        //简单的图片上传
+        return new Promise(function(resolve,reject){
+            let xhr,o;
+
+            xhr = new XMLHttpRequest();
+            o=Object.assign(this.obj,obj)
+            xhr.withCredentials = false;
+            xhr.open('POST', o.url);
+           
+            xhr.onreadystatechange=function(){
+    
+                if (xhr.readyState == 4) {
+                    if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
+                        resolve(xhr.response);
+                        
+                    } else {
+                        reject(new Error(xhr.statusText));
+                        
+                    }
+                }
+            } 
+            xhr.timeout=timeout;//设置超时时间
+            
+            xhr.send(o.formData);  //发送请求
+            xhr.ontimeout=function(e){
+                //超时处理
+                reject(e);
+            };
+            
+           this.xhr=xhr;  //存储
+        }.bind(this))
+        
+    },
     abort(cb){
        //中断
        this.xhr.abort();
@@ -136,6 +170,7 @@ ajax.get({
     console.log(err);
 
 });
+
 let a=ajax;  //存储ajax对象，为后续中断准备，如不需要直接ajax.post即可
 a.post({
     url:'http://api.coinmerit.com/currencies',
